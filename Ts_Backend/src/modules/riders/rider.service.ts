@@ -1,5 +1,50 @@
 import pool from '../../config/db';
 
+export const riderService = {
+  async updateRiderProfile(
+    userId: string,
+    data: {
+      vehicle_number?: string;
+      license_number?: string;
+      vehicle_type?: string;
+      rc_image?: string;
+      government_proof_image?: string;
+      bike_image?: string;
+    }
+  ) {
+    const result = await pool.query(
+      `
+      UPDATE riders SET
+        vehicle_number = COALESCE($2, vehicle_number),
+        license_number = COALESCE($3, license_number),
+        vehicle_type = COALESCE($4, vehicle_type),
+        rc_image = COALESCE($5, rc_image),
+        government_proof_image = COALESCE($6, government_proof_image),
+        bike_image = COALESCE($7, bike_image),
+        updated_at = NOW()
+      WHERE user_id = $1
+      RETURNING *;
+      `,
+      [
+        userId,
+        data.vehicle_number,
+        data.license_number,
+        data.vehicle_type,
+        data.rc_image,
+        data.government_proof_image,
+        data.bike_image,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Rider not found');
+    }
+
+    return result.rows[0];
+  },
+};
+
+
 export const getRiderProfile = async (userId: string) => {
   const result = await pool.query(
     `SELECT 

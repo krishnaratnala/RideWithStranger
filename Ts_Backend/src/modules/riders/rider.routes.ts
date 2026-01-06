@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import * as riderController from './rider.controller';
+import { riderController } from './rider.controller';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { roleMiddleware } from '../../middlewares/role.middleware';
+import { upload } from '../../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -16,46 +17,87 @@ router.use(authMiddleware, roleMiddleware('RIDER'));
 
 /**
  * @swagger
- * /api/riders/profile:
- *   get:
- *     summary: Get rider profile
- *     tags: [Rider]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Rider profile fetched successfully
- */
-router.get('/profile', riderController.getProfile);
-
-/**
- * @swagger
- * /api/riders/profile:
+ * /api/rider/profile:
  *   put:
- *     summary: Update rider profile
+ *     summary: Update rider profile and upload documents
+ *     description: Update rider vehicle details and upload required documents
  *     tags: [Rider]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             example:
- *               name: John Doe
- *               phone: "9876543210"
+ *             properties:
+ *               vehicle_number:
+ *                 type: string
+ *                 example: TS09AB1234
+ *               license_number:
+ *                 type: string
+ *                 example: DL-0420110149646
+ *               vehicle_type:
+ *                 type: string
+ *                 example: BIKE
+ *               rc_image:
+ *                 type: string
+ *                 format: binary
+ *               government_proof_image:
+ *                 type: string
+ *                 format: binary
+ *               bike_image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: Rider profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Rider profile updated successfully
+ *                 rider:
+ *                   type: object
  */
-router.put('/profile', riderController.updateProfile);
+router.put(
+  '/profile',
+  upload.fields([
+    { name: 'rc_image', maxCount: 1 },
+    { name: 'government_proof_image', maxCount: 1 },
+    { name: 'bike_image', maxCount: 1 },
+  ]),
+  riderController.updateProfile
+);
 
 /**
  * @swagger
- * /api/riders/availability:
+ * /api/rider/profile:
+ *   get:
+ *     summary: Get rider profile
+ *     description: Fetch logged-in rider profile details
+ *     tags: [Rider]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Rider profile fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+router.get('/profile', riderController.getProfile);
+
+/**
+ * @swagger
+ * /api/rider/availability:
  *   patch:
  *     summary: Update rider availability
+ *     description: Mark rider as available or unavailable
  *     tags: [Rider]
  *     security:
  *       - bearerAuth: []
@@ -74,6 +116,10 @@ router.put('/profile', riderController.updateProfile);
  *     responses:
  *       200:
  *         description: Rider availability updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  */
 router.patch('/availability', riderController.updateAvailability);
 

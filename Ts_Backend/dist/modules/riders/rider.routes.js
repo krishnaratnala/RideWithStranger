@@ -1,42 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const riderController = __importStar(require("./rider.controller"));
+const rider_controller_1 = require("./rider.controller");
 const auth_middleware_1 = require("../../middlewares/auth.middleware");
 const role_middleware_1 = require("../../middlewares/role.middleware");
+const upload_middleware_1 = require("../../middlewares/upload.middleware");
 const router = (0, express_1.Router)();
 /**
  * @swagger
@@ -47,44 +15,81 @@ const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware, (0, role_middleware_1.roleMiddleware)('RIDER'));
 /**
  * @swagger
- * /api/riders/profile:
- *   get:
- *     summary: Get rider profile
- *     tags: [Rider]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Rider profile fetched successfully
- */
-router.get('/profile', riderController.getProfile);
-/**
- * @swagger
- * /api/riders/profile:
+ * /api/rider/profile:
  *   put:
- *     summary: Update rider profile
+ *     summary: Update rider profile and upload documents
+ *     description: Update rider vehicle details and upload required documents
  *     tags: [Rider]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             example:
- *               name: John Doe
- *               phone: "9876543210"
+ *             properties:
+ *               vehicle_number:
+ *                 type: string
+ *                 example: TS09AB1234
+ *               license_number:
+ *                 type: string
+ *                 example: DL-0420110149646
+ *               vehicle_type:
+ *                 type: string
+ *                 example: BIKE
+ *               rc_image:
+ *                 type: string
+ *                 format: binary
+ *               government_proof_image:
+ *                 type: string
+ *                 format: binary
+ *               bike_image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: Rider profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Rider profile updated successfully
+ *                 rider:
+ *                   type: object
  */
-router.put('/profile', riderController.updateProfile);
+router.put('/profile', upload_middleware_1.upload.fields([
+    { name: 'rc_image', maxCount: 1 },
+    { name: 'government_proof_image', maxCount: 1 },
+    { name: 'bike_image', maxCount: 1 },
+]), rider_controller_1.riderController.updateProfile);
 /**
  * @swagger
- * /api/riders/availability:
+ * /api/rider/profile:
+ *   get:
+ *     summary: Get rider profile
+ *     description: Fetch logged-in rider profile details
+ *     tags: [Rider]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Rider profile fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+router.get('/profile', rider_controller_1.riderController.getProfile);
+/**
+ * @swagger
+ * /api/rider/availability:
  *   patch:
  *     summary: Update rider availability
+ *     description: Mark rider as available or unavailable
  *     tags: [Rider]
  *     security:
  *       - bearerAuth: []
@@ -103,6 +108,10 @@ router.put('/profile', riderController.updateProfile);
  *     responses:
  *       200:
  *         description: Rider availability updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  */
-router.patch('/availability', riderController.updateAvailability);
+router.patch('/availability', rider_controller_1.riderController.updateAvailability);
 exports.default = router;
